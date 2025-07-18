@@ -1,0 +1,19 @@
+{
+	"name": "LS_DynamicRestAPI",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"baseUrl": {
+				"type": "string",
+				"defaultValue": "@{pipeline().parameters.baseUrl}"
+			}
+		},
+		"annotations": [],
+		"type": "RestService",
+		"typeProperties": {
+			"url": "@{linkedService().baseUrl\n}",
+			"enableServerCertificateValidation": true,
+			"authenticationType": "Anonymous"
+		}
+	}
+}

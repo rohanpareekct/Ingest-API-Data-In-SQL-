@@ -1,0 +1,313 @@
+{
+	"name": "PL_FetchApiToBlob_FlattenJsonByAzureFunction",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetApiList",
+				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "DS_ApiListJson",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach_ApiLoop",
+				"type": "ForEach",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "GetApiList",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GetApiList').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "SetApiResponseFileName",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "api_response_file_name",
+								"value": {
+									"value": "@concat(item().apiName, '_', utcNow(), '.json')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "CallFlattenFunction",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "SetApiResponseFileName",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"retry": 3,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": true,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "GET",
+								"headers": {
+									"Content-Type": "application/json"
+								},
+								"url": "https://fn-flatten-json.azurewebsites.net/api/HttpTrigger1"
+							}
+						},
+						{
+							"name": "ProcessApiResponse",
+							"type": "ForEach",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
+							"dependsOn": [
+								{
+									"activity": "CallFlattenFunction",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"items": {
+									"value": "@activity('CallFlattenFunction').output.apiResponses",
+									"type": "Expression"
+								},
+								"isSequential": true,
+								"activities": [
+									{
+										"name": "WriteTempJson",
+										"type": "Copy",
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [],
+										"policy": {
+											"retry": 2,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "JsonSource",
+												"storeSettings": {
+													"type": "AzureBlobStorageReadSettings",
+													"recursive": true,
+													"enablePartitionDiscovery": false
+												},
+												"formatSettings": {
+													"type": "JsonReadSettings"
+												}
+											},
+											"sink": {
+												"type": "JsonSink",
+												"storeSettings": {
+													"type": "AzureBlobStorageWriteSettings",
+													"copyBehavior": "PreserveHierarchy"
+												},
+												"formatSettings": {
+													"type": "JsonWriteSettings"
+												}
+											},
+											"enableStaging": false,
+											"parallelCopies": 4
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_FlattenedJson_Source",
+												"type": "DatasetReference"
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_Output_JSON",
+												"type": "DatasetReference",
+												"parameters": {
+													"apiName": "@variables('api_response_file_name')"
+												}
+											}
+										]
+									},
+									{
+										"name": "WriteToSqlServer",
+										"type": "Copy",
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [
+											{
+												"activity": "WriteTempJson",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"retry": 2,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "JsonSource",
+												"storeSettings": {
+													"type": "AzureBlobStorageReadSettings",
+													"recursive": true
+												},
+												"formatSettings": {
+													"type": "JsonReadSettings"
+												}
+											},
+											"sink": {
+												"type": "AzureSqlSink",
+												"writeBehavior": "insert",
+												"sqlWriterUseTableLock": false,
+												"tableOption": "autoCreate"
+											},
+											"enableStaging": false
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_Output_JSON",
+												"type": "DatasetReference",
+												"parameters": {
+													"apiName": "@variables('api_response_file_name')"
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_SQL_APIRespTable",
+												"type": "DatasetReference",
+												"parameters": {
+													"TableName": "@concat('stg_', item().apiName)"
+												}
+											}
+										]
+									},
+									{
+										"name": "CleanupTempFile",
+										"type": "Delete",
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [
+											{
+												"activity": "WriteToSqlServer",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"retry": 1,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"dataset": {
+												"referenceName": "DS_FlattenedJson_Source",
+												"type": "DatasetReference"
+											},
+											"enableLogging": false,
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": false,
+												"deleteFilesAfterCompletion": true
+											}
+										}
+									},
+									{
+										"name": "SendSuccessNotification",
+										"type": "WebActivity",
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [
+											{
+												"activity": "CleanupTempFile",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"retry": 1,
+											"retryIntervalInSeconds": 60,
+											"secureOutput": true,
+											"secureInput": true
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"method": "POST",
+											"url": "https://prod-04.centralindia.logic.azure.com:443/workflows/f9ab4e979cfd40479acc0daa4613bc49/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=xZLeSUD4p9ziJ3qwGSvK61QQqIKKs87w-MdayAngh5Y",
+											"body": {
+												"apiName": "@item().apiName",
+												"status": "Success",
+												"fileName": "@variables('api_response_file_name')",
+												"recordsProcessed": "@length(item().data)"
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"api_response_file_name": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-07-17T13:28:47Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

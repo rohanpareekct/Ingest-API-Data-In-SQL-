@@ -1,0 +1,9 @@
+{
+	"name": "rohan-adf-factory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "8b1d0125-5af6-4976-a601-2576aa3daaab",
+		"tenantId": "e4e34038-ea1f-4882-b6e8-ccd776459ca0"
+	}
+}
