@@ -1,13 +1,13 @@
 {
 	"name": "LS_ComprehendDatabricksNotebook",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"annotations": [],
 		"type": "AzureDatabricks",
 		"typeProperties": {
 			"domain": "https://adb-4203159795451337.17.azuredatabricks.net",
-			"authentication": "MSI",
-			"workspaceResourceId": "/subscriptions/7ced55f9-870b-4c5b-8a79-db520e98d083/resourceGroups/rohan-rg/providers/Microsoft.Databricks/workspaces/rohan_exp_workspace",
-			"existingClusterId": "4203159795451337"
+			"existingClusterId": "0801-104608-el1rhggr",
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQDY1OEE4MEFCLTJENjUtNEY2Ni1CNTc3LUFBREY2RkIwMTU0Nl9kOWFhZmZkNC0xNWNhLTQwZmMtYmYzZS00ZTg0ZDljYjgyMjMiDQp9"
 		}
 	}
 }
