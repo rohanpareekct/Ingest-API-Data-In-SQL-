@@ -1,0 +1,13 @@
+{
+	"name": "LS_ComprehendDatabricksNotebook",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-4203159795451337.17.azuredatabricks.net",
+			"authentication": "MSI",
+			"workspaceResourceId": "/subscriptions/7ced55f9-870b-4c5b-8a79-db520e98d083/resourceGroups/rohan-rg/providers/Microsoft.Databricks/workspaces/rohan_exp_workspace",
+			"existingClusterId": "0801-104608-el1rhggr"
+		}
+	}
+}
