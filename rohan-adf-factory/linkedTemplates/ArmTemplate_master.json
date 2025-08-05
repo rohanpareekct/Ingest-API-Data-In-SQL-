@@ -11,13 +11,17 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_BlobStorage'"
 		},
+		"LS_ComprehendDatabricksNotebook_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_ComprehendDatabricksNotebook'"
+		},
 		"LS_SQLDB_password": {
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_SQLDB'"
 		},
-		"LS_ComprehendDatabricksNotebook_accessToken": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessToken' of 'LS_ComprehendDatabricksNotebook'"
+		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0801-104608-el1rhggr"
 		},
 		"LS_DynamicRestAPI_properties_typeProperties_url": {
 			"type": "string",
@@ -34,10 +38,6 @@
 		"LS_SQLDB_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "sqladmin"
-		},
-		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
-			"type": "string",
-			"defaultValue": "0801-104608-el1rhggr"
 		},
 		"containerUri": {
 			"type": "string",
@@ -69,11 +69,14 @@
 					"LS_BlobStorage_connectionString": {
 						"value": "[parameters('LS_BlobStorage_connectionString')]"
 					},
+					"LS_ComprehendDatabricksNotebook_accessToken": {
+						"value": "[parameters('LS_ComprehendDatabricksNotebook_accessToken')]"
+					},
 					"LS_SQLDB_password": {
 						"value": "[parameters('LS_SQLDB_password')]"
 					},
-					"LS_ComprehendDatabricksNotebook_accessToken": {
-						"value": "[parameters('LS_ComprehendDatabricksNotebook_accessToken')]"
+					"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId')]"
 					},
 					"LS_DynamicRestAPI_properties_typeProperties_url": {
 						"value": "[parameters('LS_DynamicRestAPI_properties_typeProperties_url')]"
@@ -86,9 +89,6 @@
 					},
 					"LS_SQLDB_properties_typeProperties_userName": {
 						"value": "[parameters('LS_SQLDB_properties_typeProperties_userName')]"
-					},
-					"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
-						"value": "[parameters('LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId')]"
 					}
 				}
 			},

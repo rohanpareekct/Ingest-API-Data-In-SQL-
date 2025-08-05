@@ -11,13 +11,17 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_BlobStorage'"
 		},
+		"LS_ComprehendDatabricksNotebook_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_ComprehendDatabricksNotebook'"
+		},
 		"LS_SQLDB_password": {
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_SQLDB'"
 		},
-		"LS_ComprehendDatabricksNotebook_accessToken": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessToken' of 'LS_ComprehendDatabricksNotebook'"
+		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0801-104608-el1rhggr"
 		},
 		"LS_DynamicRestAPI_properties_typeProperties_url": {
 			"type": "string",
@@ -34,10 +38,6 @@
 		"LS_SQLDB_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "sqladmin"
-		},
-		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
-			"type": "string",
-			"defaultValue": "0801-104608-el1rhggr"
 		}
 	},
 	"variables": {
@@ -53,6 +53,24 @@
 				"type": "AzureBlobStorage",
 				"typeProperties": {
 					"connectionString": "[parameters('LS_BlobStorage_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ComprehendDatabricksNotebook')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-4203159795451337.17.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('LS_ComprehendDatabricksNotebook_accessToken')]"
+					},
+					"existingClusterId": "[parameters('LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId')]"
 				}
 			},
 			"dependsOn": []
@@ -96,24 +114,6 @@
 						"type": "SecureString",
 						"value": "[parameters('LS_SQLDB_password')]"
 					}
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/LS_ComprehendDatabricksNotebook')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureDatabricks",
-				"typeProperties": {
-					"domain": "https://adb-4203159795451337.17.azuredatabricks.net",
-					"accessToken": {
-						"type": "SecureString",
-						"value": "[parameters('LS_ComprehendDatabricksNotebook_accessToken')]"
-					},
-					"existingClusterId": "[parameters('LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId')]"
 				}
 			},
 			"dependsOn": []
@@ -209,6 +209,83 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_SQLDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BlobDynamicCsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_BlobStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "DynamicFiles",
+						"container": "api-json-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "orderId",
+						"type": "String"
+					},
+					{
+						"name": "userId",
+						"type": "String"
+					},
+					{
+						"name": "isOrderConfirmed",
+						"type": "String"
+					},
+					{
+						"name": "isDispathced",
+						"type": "String"
+					},
+					{
+						"name": "isReturned",
+						"type": "String"
+					},
+					{
+						"name": "orderPlacementSource",
+						"type": "String"
+					},
+					{
+						"name": "orderValueBeforeDiscount",
+						"type": "String"
+					},
+					{
+						"name": "orderValueAfterDiscount",
+						"type": "String"
+					},
+					{
+						"name": "orderReturnedTimestamp",
+						"type": "String"
+					},
+					{
+						"name": "orderCreatedTimestamp",
+						"type": "String"
+					},
+					{
+						"name": "createdTimestamp",
+						"type": "String"
+					},
+					{
+						"name": "modifiedTimestamp",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_BlobStorage')]"
 			]
 		},
 		{
@@ -429,83 +506,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_SQLDB')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/BlobDynamicCsv')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_BlobStorage",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobStorageLocation",
-						"folderPath": "DynamicFiles",
-						"container": "api-json-data"
-					},
-					"columnDelimiter": ",",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": [
-					{
-						"name": "orderId",
-						"type": "String"
-					},
-					{
-						"name": "userId",
-						"type": "String"
-					},
-					{
-						"name": "isOrderConfirmed",
-						"type": "String"
-					},
-					{
-						"name": "isDispathced",
-						"type": "String"
-					},
-					{
-						"name": "isReturned",
-						"type": "String"
-					},
-					{
-						"name": "orderPlacementSource",
-						"type": "String"
-					},
-					{
-						"name": "orderValueBeforeDiscount",
-						"type": "String"
-					},
-					{
-						"name": "orderValueAfterDiscount",
-						"type": "String"
-					},
-					{
-						"name": "orderReturnedTimestamp",
-						"type": "String"
-					},
-					{
-						"name": "orderCreatedTimestamp",
-						"type": "String"
-					},
-					{
-						"name": "createdTimestamp",
-						"type": "String"
-					},
-					{
-						"name": "modifiedTimestamp",
-						"type": "String"
-					}
-				]
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_BlobStorage')]"
 			]
 		},
 		{
@@ -1128,7 +1128,7 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"notebookPath": "/Shared/TransformCsvToParquet",
+							"notebookPath": "/Users/rohan.pareek@celebaltech.com/Mount_ADLS_Rohan",
 							"baseParameters": {
 								"input_path": "dbfs:/mnt/blob/raw/",
 								"output_path": "dbfs:/mnt/blob/processed/",

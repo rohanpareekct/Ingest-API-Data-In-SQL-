@@ -8,11 +8,14 @@
 		"LS_BlobStorage_connectionString": {
 			"value": ""
 		},
+		"LS_ComprehendDatabricksNotebook_accessToken": {
+			"value": ""
+		},
 		"LS_SQLDB_password": {
 			"value": ""
 		},
-		"LS_ComprehendDatabricksNotebook_accessToken": {
-			"value": ""
+		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+			"value": "0801-104608-el1rhggr"
 		},
 		"LS_DynamicRestAPI_properties_typeProperties_url": {
 			"value": "@{linkedService().baseUrl\n}"
@@ -25,9 +28,6 @@
 		},
 		"LS_SQLDB_properties_typeProperties_userName": {
 			"value": "sqladmin"
-		},
-		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
-			"value": "0801-104608-el1rhggr"
 		}
 	}
 }
