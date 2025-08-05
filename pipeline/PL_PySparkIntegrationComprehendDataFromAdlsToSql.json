@@ -5,8 +5,6 @@
 			{
 				"name": "ComprehendNotebook",
 				"type": "DatabricksNotebook",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "ForEachTable",
@@ -24,7 +22,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Shared/TransformCsvToParquet",
+					"notebookPath": "/Users/rohan.pareek@celebaltech.com/Mount_ADLS_Rohan",
 					"baseParameters": {
 						"input_path": "dbfs:/mnt/blob/raw/",
 						"output_path": "dbfs:/mnt/blob/processed/",
