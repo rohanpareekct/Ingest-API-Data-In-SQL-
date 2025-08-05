@@ -3,76 +3,13 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "GetSqlIntoAdls",
-				"type": "Copy",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"source": {
-						"type": "AzureSqlSource",
-						"queryTimeout": "02:00:00",
-						"partitionOption": "None"
-					},
-					"sink": {
-						"type": "DelimitedTextSink",
-						"storeSettings": {
-							"type": "AzureBlobStorageWriteSettings"
-						},
-						"formatSettings": {
-							"type": "DelimitedTextWriteSettings",
-							"quoteAllText": true,
-							"fileExtension": ".csv"
-						}
-					},
-					"enableStaging": false,
-					"translator": {
-						"type": "TabularTranslator",
-						"typeConversion": true,
-						"typeConversionSettings": {
-							"allowDataTruncation": true,
-							"treatBooleanAsNumber": false
-						}
-					}
-				},
-				"inputs": [
-					{
-						"referenceName": "DS_SQL_APIRespTable",
-						"type": "DatasetReference",
-						"parameters": {
-							"TableName": "@item().TableName"
-						}
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "DS_ApiOutput_CSV",
-						"type": "DatasetReference",
-						"parameters": {
-							"apiName": {
-								"value": "@concat(item().TableName, '.csv')",
-								"type": "Expression"
-							}
-						}
-					}
-				]
-			},
-			{
 				"name": "ComprehendNotebook",
 				"type": "DatabricksNotebook",
 				"state": "Inactive",
 				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
-						"activity": "GetSqlIntoAdls",
+						"activity": "ForEachTable",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -168,7 +105,26 @@
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
-								"enableStaging": false
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".csv"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
 							},
 							"inputs": [
 								{
@@ -184,6 +140,12 @@
 											"type": "Expression"
 										}
 									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "BlobDynamicCsv",
+									"type": "DatasetReference"
 								}
 							]
 						}

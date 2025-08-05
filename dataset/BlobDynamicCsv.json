@@ -1,0 +1,72 @@
+{
+	"name": "BlobDynamicCsv",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_BlobStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "DynamicFiles",
+				"container": "api-json-data"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "orderId",
+				"type": "String"
+			},
+			{
+				"name": "userId",
+				"type": "String"
+			},
+			{
+				"name": "isOrderConfirmed",
+				"type": "String"
+			},
+			{
+				"name": "isDispathced",
+				"type": "String"
+			},
+			{
+				"name": "isReturned",
+				"type": "String"
+			},
+			{
+				"name": "orderPlacementSource",
+				"type": "String"
+			},
+			{
+				"name": "orderValueBeforeDiscount",
+				"type": "String"
+			},
+			{
+				"name": "orderValueAfterDiscount",
+				"type": "String"
+			},
+			{
+				"name": "orderReturnedTimestamp",
+				"type": "String"
+			},
+			{
+				"name": "orderCreatedTimestamp",
+				"type": "String"
+			},
+			{
+				"name": "createdTimestamp",
+				"type": "String"
+			},
+			{
+				"name": "modifiedTimestamp",
+				"type": "String"
+			}
+		]
+	}
+}
