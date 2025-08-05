@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "rohan-adf-factory"
+		},
+		"LS_BlobStorage_connectionString": {
+			"value": ""
+		},
+		"LS_SQLDB_password": {
+			"value": ""
+		},
+		"LS_ComprehendDatabricksNotebook_accessToken": {
+			"value": ""
+		},
+		"LS_DynamicRestAPI_properties_typeProperties_url": {
+			"value": "@{linkedService().baseUrl\n}"
+		},
+		"LS_SQLDB_properties_typeProperties_server": {
+			"value": "rohan-sqlserver123.database.windows.net"
+		},
+		"LS_SQLDB_properties_typeProperties_database": {
+			"value": "ADFDatabase"
+		},
+		"LS_SQLDB_properties_typeProperties_userName": {
+			"value": "sqladmin"
+		},
+		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+			"value": "0801-104608-el1rhggr"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

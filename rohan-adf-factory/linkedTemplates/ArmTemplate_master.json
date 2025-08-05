@@ -1,0 +1,98 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "rohan-adf-factory"
+		},
+		"LS_BlobStorage_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_BlobStorage'"
+		},
+		"LS_SQLDB_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQLDB'"
+		},
+		"LS_ComprehendDatabricksNotebook_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_ComprehendDatabricksNotebook'"
+		},
+		"LS_DynamicRestAPI_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "@{linkedService().baseUrl\n}"
+		},
+		"LS_SQLDB_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "rohan-sqlserver123.database.windows.net"
+		},
+		"LS_SQLDB_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ADFDatabase"
+		},
+		"LS_SQLDB_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0801-104608-el1rhggr"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "rohan-adf-factory_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"LS_BlobStorage_connectionString": {
+						"value": "[parameters('LS_BlobStorage_connectionString')]"
+					},
+					"LS_SQLDB_password": {
+						"value": "[parameters('LS_SQLDB_password')]"
+					},
+					"LS_ComprehendDatabricksNotebook_accessToken": {
+						"value": "[parameters('LS_ComprehendDatabricksNotebook_accessToken')]"
+					},
+					"LS_DynamicRestAPI_properties_typeProperties_url": {
+						"value": "[parameters('LS_DynamicRestAPI_properties_typeProperties_url')]"
+					},
+					"LS_SQLDB_properties_typeProperties_server": {
+						"value": "[parameters('LS_SQLDB_properties_typeProperties_server')]"
+					},
+					"LS_SQLDB_properties_typeProperties_database": {
+						"value": "[parameters('LS_SQLDB_properties_typeProperties_database')]"
+					},
+					"LS_SQLDB_properties_typeProperties_userName": {
+						"value": "[parameters('LS_SQLDB_properties_typeProperties_userName')]"
+					},
+					"LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('LS_ComprehendDatabricksNotebook_properties_typeProperties_existingClusterId')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
