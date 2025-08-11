@@ -47,10 +47,15 @@
 				"typeProperties": {
 					"dataset": {
 						"referenceName": "DS_InputFolder",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"FolderPath": "@pipeline().parameters.SourceFolder",
+							"FileName": "@item().name"
+						}
 					},
 					"fieldList": [
-						"childItems"
+						"childItems",
+						"lastModified"
 					],
 					"storeSettings": {
 						"type": "AzureBlobStorageReadSettings",
@@ -151,7 +156,10 @@
 							"inputs": [
 								{
 									"referenceName": "DS_InputFolder",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderPath": "@pipeline().parameters.SourceFolder"
+									}
 								}
 							],
 							"outputs": [
