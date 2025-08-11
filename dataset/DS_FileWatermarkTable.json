@@ -1,0 +1,27 @@
+{
+	"name": "DS_FileWatermarkTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQLDB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "PipelineName",
+				"type": "nvarchar"
+			},
+			{
+				"name": "LastProcessedDate",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "FileWatermark"
+		}
+	}
+}
