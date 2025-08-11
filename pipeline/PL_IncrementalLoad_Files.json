@@ -1,15 +1,12 @@
 {
-	"name": "PL_FetchDataFromSqlToAdlsUsingIncrementalLoading",
+	"name": "PL_IncrementalLoad_Files",
 	"properties": {
 		"activities": [
 			{
-				"name": "Copy data1",
-				"type": "Copy",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
+				"name": "Get_Watermark",
+				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
-					"timeout": "0.12:00:00",
 					"retry": 0,
 					"retryIntervalInSeconds": 30,
 					"secureOutput": false,
@@ -18,31 +15,29 @@
 				"userProperties": [],
 				"typeProperties": {
 					"source": {
-						"type": "DelimitedTextSource",
-						"storeSettings": {
-							"type": "AzureBlobStorageReadSettings",
-							"recursive": true,
-							"enablePartitionDiscovery": false
-						},
-						"formatSettings": {
-							"type": "DelimitedTextReadSettings"
-						}
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT TOP 1 LastWatermark FROM dbo.FileWatermark ORDER BY Id DESC",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
 					},
-					"enableStaging": false
-				},
-				"inputs": [
-					{
-						"referenceName": "DS_InputFolder",
+					"dataset": {
+						"referenceName": "DS_FileWatermarkTable",
 						"type": "DatasetReference"
 					}
-				]
+				}
 			},
 			{
-				"name": "Get List of all Files",
+				"name": "Get_FileList",
 				"type": "GetMetadata",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Get_Watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
-					"timeout": "0.12:00:00",
 					"retry": 0,
 					"retryIntervalInSeconds": 30,
 					"secureOutput": false,
@@ -67,11 +62,120 @@
 				}
 			},
 			{
-				"name": "Lookup Last Watermark",
-				"type": "Lookup",
-				"dependsOn": [],
+				"name": "Filter_NewFiles",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get_FileList",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_FileList').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@greater(item().lastModified, activity('Get_Watermark').output.firstRow.LastWatermark)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach_Files",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Filter_NewFiles",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter_NewFiles').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy_File",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"wildcardFolderPath": "@pipeline().parameters.SourceFolder",
+										"wildcardFileName": "@item().name",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_InputFolder",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_LatestFiles",
+									"type": "DatasetReference"
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Update_Watermark",
+				"type": "StoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ForEach_Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
-					"timeout": "0.12:00:00",
 					"retry": 0,
 					"retryIntervalInSeconds": 30,
 					"secureOutput": false,
@@ -79,15 +183,16 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"source": {
-						"type": "AzureSqlSource",
-						"sqlReaderQuery": "select LastProcessedDate \nfrom FileWatermark\nwhere PipelineName = 'PL_FetchDataFromSqlToAdlsUsingIncrementalLoading'",
-						"queryTimeout": "02:00:00",
-						"partitionOption": "None"
-					},
+					"storedProcedureName": "usp_UpdateWatermark",
 					"dataset": {
-						"referenceName": "DS_FileWatermarkTable",
+						"referenceName": "DS_WatermarkTable",
 						"type": "DatasetReference"
+					},
+					"storedProcedureParameters": {
+						"NewWatermark": {
+							"value": "@utcNow()",
+							"type": "String"
+						}
 					}
 				}
 			}
