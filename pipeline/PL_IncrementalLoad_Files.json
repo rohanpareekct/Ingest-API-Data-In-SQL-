@@ -70,6 +70,8 @@
 			{
 				"name": "Filter_NewFiles",
 				"type": "Filter",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Get_FileList",
@@ -93,6 +95,8 @@
 			{
 				"name": "ForEach_Files",
 				"type": "ForEach",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Filter_NewFiles",
@@ -187,6 +191,8 @@
 			{
 				"name": "Update_Watermark",
 				"type": "StoredProcedure",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "ForEach_Files",
