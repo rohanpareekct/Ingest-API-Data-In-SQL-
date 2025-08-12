@@ -18,7 +18,6 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"folderPath": "DynamicFiles",
 				"container": "api-json-data"
 			},
 			"columnDelimiter": ",",
