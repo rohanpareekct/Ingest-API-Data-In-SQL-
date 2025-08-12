@@ -59,6 +59,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
@@ -106,6 +107,7 @@
 						"value": "@activity('Filter_NewFiles').output.value",
 						"type": "Expression"
 					},
+					"isSequential": true,
 					"activities": [
 						{
 							"name": "Copy_File",
@@ -124,8 +126,14 @@
 									"storeSettings": {
 										"type": "AzureBlobStorageReadSettings",
 										"recursive": true,
-										"wildcardFolderPath": "@pipeline().parameters.SourceFolder",
-										"wildcardFileName": "@item().name",
+										"wildcardFolderPath": {
+											"value": "@pipeline().parameters.SourceFolder",
+											"type": "Expression"
+										},
+										"wildcardFileName": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
 										"enablePartitionDiscovery": false
 									},
 									"formatSettings": {
@@ -158,7 +166,11 @@
 									"referenceName": "DS_InputFolder",
 									"type": "DatasetReference",
 									"parameters": {
-										"FolderPath": "@pipeline().parameters.SourceFolder"
+										"FolderPath": "@pipeline().parameters.SourceFolder",
+										"FileName": {
+											"value": "@item().FielName",
+											"type": "Expression"
+										}
 									}
 								}
 							],
@@ -205,6 +217,12 @@
 				}
 			}
 		],
+		"parameters": {
+			"SourceFolder": {
+				"type": "string",
+				"defaultValue": "DynamicFiles"
+			}
+		},
 		"annotations": []
 	}
 }
