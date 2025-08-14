@@ -1,0 +1,263 @@
+{
+	"name": "PL_IncrementalLoad_FilesFromSql_Working",
+	"properties": {
+		"activities": [
+			{
+				"name": "lastupdate",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select TableName,isnull(WatermarkValue,'2010-01-01 00:00:00.000') as lastruntime from watermarktable where TableName='orders'\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_FileWatermarkTable_copy1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Set_PrevWatermark",
+				"type": "SetVariable",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "prevWatermark",
+					"value": {
+						"value": "@coalesce(activity('Get_Watermark').output.firstRow.lastprocesseddate, '1900-01-01 00:00:00')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Copy_Incremental_Student_to_ADLS_CSV",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "lastupdate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "newwatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from Orders \nWHERE CreatedDate BETWEEN CAST('@{activity('lastupdate').output.firstRow.lastruntime}' as DATETIME) and cast('@{activity('newwatermark').output.firstRow.newWaterMarkValue}' as DATETIME)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".csv"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_IncrementalLoadTable",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_LatestFiles",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Lookup_Max_ModifiedDate",
+				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('SELECT MAX([ModifiedDate]) AS MaxTS FROM [dbo].[student] WHERE [ModifiedDate] > ''', variables('prevWatermark'), '''')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_IncrementalLoadTable",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "Update_Watermark",
+				"type": "Script",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Max_ModifiedDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_SQLDB",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "@concat(\n'DECLARE @NewWM DATETIME = ',\n    'CONVERT(DATETIME, ''',\n        if(equals(activity(''Lookup_Max_ModifiedDate'').output.firstRow.MaxTS, null),\n          variables(''prevWatermark''),\n          activity(''Lookup_Max_ModifiedDate'').output.firstRow.MaxTS\n        ),\n    ''', 120);',\n'\nIF EXISTS (SELECT 1 FROM [dbo].[FileWatermark] WHERE pipelinename = ''PL_IncrementalLoad_FilesFromSql'')\n    UPDATE [dbo].[FileWatermark]\n       SET lastprocesseddate = @NewWM\n     WHERE pipelinename = ''PL_IncrementalLoad_FilesFromSql''\nELSE\n    INSERT INTO [dbo].[FileWatermark] (pipelinename, lastprocesseddate)\n    VALUES (''PL_IncrementalLoad_FilesFromSql'', @NewWM);'\n)",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "newwatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select max(CreatedDate) as newWaterMarkValue from orders",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_IncrementalLoadTable_copy1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Stored procedure1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy_Incremental_Student_to_ADLS_CSV",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[update_watermarkvalue]",
+					"storedProcedureParameters": {
+						"TableName": {
+							"value": "orders",
+							"type": "String"
+						},
+						"LastModifiedtime": {
+							"value": "@activity('newwatermark').output.firstRow.newWaterMarkValue",
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_SQLDB",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"PipelineName": {
+				"type": "string",
+				"defaultValue": "PL_IncrementalLoad_FilesFromSql"
+			}
+		},
+		"variables": {
+			"prevWatermark": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}

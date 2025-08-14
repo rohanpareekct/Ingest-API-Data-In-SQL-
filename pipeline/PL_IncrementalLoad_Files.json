@@ -16,7 +16,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "SELECT TOP 1 LastWatermark FROM dbo.FileWatermark ORDER BY Id DESC",
+						"sqlReaderQuery": "select lastprocesseddate from [dbo].[FileWatermark] where pipelinename = 'PL_FetchDataFromSqlToAdlsUsingIncrementalLoading'",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
@@ -29,6 +29,8 @@
 			{
 				"name": "Get_FileList",
 				"type": "GetMetadata",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Get_Watermark",
@@ -47,11 +49,7 @@
 				"typeProperties": {
 					"dataset": {
 						"referenceName": "DS_InputFolder",
-						"type": "DatasetReference",
-						"parameters": {
-							"FolderPath": "@pipeline().parameters.SourceFolder",
-							"FileName": "@item().name"
-						}
+						"type": "DatasetReference"
 					},
 					"fieldList": [
 						"childItems",
@@ -116,6 +114,8 @@
 						{
 							"name": "Copy_File",
 							"type": "Copy",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [],
 							"policy": {
 								"retry": 0,
@@ -168,14 +168,7 @@
 							"inputs": [
 								{
 									"referenceName": "DS_InputFolder",
-									"type": "DatasetReference",
-									"parameters": {
-										"FolderPath": "@pipeline().parameters.SourceFolder",
-										"FileName": {
-											"value": "@item().FielName",
-											"type": "Expression"
-										}
-									}
+									"type": "DatasetReference"
 								}
 							],
 							"outputs": [
@@ -191,8 +184,6 @@
 			{
 				"name": "Update_Watermark",
 				"type": "StoredProcedure",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "ForEach_Files",
