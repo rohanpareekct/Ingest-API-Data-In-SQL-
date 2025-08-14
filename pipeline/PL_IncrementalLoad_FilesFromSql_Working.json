@@ -236,7 +236,10 @@
 							"type": "String"
 						},
 						"LastModifiedtime": {
-							"value": "@activity('newwatermark').output.firstRow.newWaterMarkValue",
+							"value": {
+								"value": "@activity('newwatermark').output.firstRow.newWaterMarkValue",
+								"type": "Expression"
+							},
 							"type": "Datetime"
 						}
 					}

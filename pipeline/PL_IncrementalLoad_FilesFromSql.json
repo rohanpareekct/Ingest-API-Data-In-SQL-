@@ -5,6 +5,8 @@
 			{
 				"name": "Get_Watermark",
 				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [],
 				"policy": {
 					"retry": 0,
@@ -29,6 +31,8 @@
 			{
 				"name": "Copy data1",
 				"type": "Copy",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Set CurrentTimetamp Value",
@@ -89,6 +93,8 @@
 			{
 				"name": "Set CurrentTimetamp Value",
 				"type": "SetVariable",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Get_Watermark",
@@ -113,6 +119,8 @@
 			{
 				"name": "Script1",
 				"type": "Script",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Copy data1",
@@ -149,6 +157,8 @@
 			{
 				"name": "Get_Student_Data",
 				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Get_Watermark",
@@ -168,7 +178,6 @@
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"sqlReaderQuery": "@concat('SELECT MAX([ModifiedDate]) AS MaxTS FROM [dbo].[student] WHERE [ModifiedDate] > ''', variables('prevWatermark'), '''')",
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
