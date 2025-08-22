@@ -5,8 +5,6 @@
 			{
 				"name": "Listoftables",
 				"type": "Lookup",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -32,8 +30,6 @@
 			{
 				"name": "ForEachTable",
 				"type": "ForEach",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Listoftables",
@@ -64,6 +60,10 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+										"type": "Expression"
+									},
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
@@ -76,14 +76,7 @@
 						{
 							"name": "NewWatermark",
 							"type": "Lookup",
-							"dependsOn": [
-								{
-									"activity": "LastWatermark",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
+							"dependsOn": [],
 							"policy": {
 								"retry": 0,
 								"retryIntervalInSeconds": 30,
@@ -115,6 +108,12 @@
 							"dependsOn": [
 								{
 									"activity": "NewWatermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "LastWatermark",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -170,7 +169,11 @@
 							"outputs": [
 								{
 									"referenceName": "DS_DynamicCsvAsTableName",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": "@item().TableName",
+										"FileName": "@concat('Increment load-',formatDateTime(utcNow(),'yyyy-MM-dd_HHmmss'))"
+									}
 								}
 							]
 						},
