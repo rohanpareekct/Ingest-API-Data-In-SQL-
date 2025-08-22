@@ -3,55 +3,18 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "ComprehendNotebook",
-				"type": "DatabricksNotebook",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
-				"dependsOn": [
-					{
-						"activity": "ForEachTable",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"notebookPath": "/Users/rohan.pareek@celebaltech.com/Mount_ADLS_Rohan",
-					"baseParameters": {
-						"input_path": "dbfs:/mnt/blob/raw/",
-						"output_path": "dbfs:/mnt/blob/processed/",
-						"table_names": "table1,table2,table3"
-					}
-				},
-				"linkedServiceName": {
-					"referenceName": "LS_ComprehendDatabricksNotebook",
-					"type": "LinkedServiceReference"
-				}
-			},
-			{
 				"name": "Listoftables",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
+					"retryIntervalInSeconds": 30
 				},
 				"userProperties": [],
 				"typeProperties": {
 					"source": {
 						"type": "AzureSqlSource",
-						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
 					"dataset": {
@@ -84,13 +47,10 @@
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "CopyTabletoBlob",
-							"type": "Copy",
-							"state": "Inactive",
-							"onInactiveMarkAs": "Succeeded",
+							"name": "LastWatermark",
+							"type": "Lookup",
 							"dependsOn": [],
 							"policy": {
-								"timeout": "0.12:00:00",
 								"retry": 0,
 								"retryIntervalInSeconds": 30,
 								"secureOutput": false,
@@ -100,7 +60,79 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"queryTimeout": "02:00:00",
+									"sqlReaderQuery": {
+										"value": "SELECT WatermarkValue FROM WatermarkTable WHERE TableName='@{item().TableName}'",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_FileWatermarkTable_copy1",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "NewWatermark",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "LastWatermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT MAX(@{item().WatermarkColumn}) AS NewWaterMarkValue FROM @{item().TableName}",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_DynamicTableName",
+									"type": "DatasetReference",
+									"parameters": {
+										"tableName": "@{item().TableName}"
+									}
+								}
+							}
+						},
+						{
+							"name": "CopyTabletoBlob",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "NewWatermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT * FROM @{item().TableName} WHERE @{item().WatermarkColumn} > '@{activity('LastWatermark').output.firstRow.WatermarkValue}' AND @{item().WatermarkColumn} <= '@{activity('NewWatermark').output.firstRow.NewWaterMarkValue}'",
+										"type": "Expression"
+									},
 									"partitionOption": "None"
 								},
 								"sink": {
@@ -114,29 +146,15 @@
 										"fileExtension": ".csv"
 									}
 								},
-								"enableStaging": false,
-								"translator": {
-									"type": "TabularTranslator",
-									"typeConversion": true,
-									"typeConversionSettings": {
-										"allowDataTruncation": true,
-										"treatBooleanAsNumber": false
-									}
-								}
+								"enableStaging": false
 							},
 							"inputs": [
 								{
 									"referenceName": "SqlTableDynamic",
 									"type": "DatasetReference",
 									"parameters": {
-										"schema": {
-											"value": "@item().TABLE_SCHEMA",
-											"type": "Expression"
-										},
-										"table": {
-											"value": "@item().TABLE_NAME",
-											"type": "Expression"
-										}
+										"schema": "dbo",
+										"table": "@{item().TableName}"
 									}
 								}
 							],
@@ -148,11 +166,17 @@
 							]
 						},
 						{
-							"name": "Lookup1",
-							"type": "Lookup",
-							"dependsOn": [],
+							"name": "UpdateWatermark",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "CopyTabletoBlob",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
 							"policy": {
-								"timeout": "0.12:00:00",
 								"retry": 0,
 								"retryIntervalInSeconds": 30,
 								"secureOutput": false,
@@ -160,25 +184,39 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"source": {
-									"type": "AzureSqlSource",
-									"sqlReaderQuery": {
-										"value": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+								"storedProcedureName": "[dbo].[update_newWatermarkvalue]",
+								"storedProcedureParameters": {
+									"TableName": {
+										"value": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
 										"type": "Expression"
 									},
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
-								},
-								"dataset": {
-									"referenceName": "DS_NewFileWatermarkTable",
-									"type": "DatasetReference"
+									"LastModifiedtime": {
+										"value": {
+											"value": "@{activity('NewWatermark').output.firstRow.NewWaterMarkValue}",
+											"type": "Expression"
+										},
+										"type": "Expression"
+									}
 								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_SQLDB",
+								"type": "LinkedServiceReference"
 							}
 						}
 					]
 				}
 			}
 		],
+		"parameters": {
+			"PipelineName": {
+				"type": "string",
+				"defaultValue": "PL_IncrementalLoad_FilesFromSqlBulk"
+			}
+		},
 		"annotations": []
 	}
 }
