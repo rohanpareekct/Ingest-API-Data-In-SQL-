@@ -21,7 +21,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "DS_FileWatermarkTable_copy1",
+						"referenceName": "DS_FileNewWatermarkTable",
 						"type": "DatasetReference"
 					}
 				}
