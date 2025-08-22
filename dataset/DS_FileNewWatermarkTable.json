@@ -1,5 +1,5 @@
 {
-	"name": "DS_FileWatermarkTable_copy1",
+	"name": "DS_FileNewWatermarkTable",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_SQLDB",
@@ -21,7 +21,7 @@
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "watermarktable"
+			"table": "newWatermarktable"
 		}
 	}
 }

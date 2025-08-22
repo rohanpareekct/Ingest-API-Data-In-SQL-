@@ -5,6 +5,8 @@
 			{
 				"name": "Listoftables",
 				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -30,6 +32,8 @@
 			{
 				"name": "ForEachTable",
 				"type": "ForEach",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Listoftables",
@@ -60,14 +64,11 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"sqlReaderQuery": {
-										"value": "SELECT WatermarkValue FROM WatermarkTable WHERE TableName='@{item().TableName}'",
-										"type": "Expression"
-									},
+									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
 								"dataset": {
-									"referenceName": "DS_FileWatermarkTable_copy1",
+									"referenceName": "DS_FileNewWatermarkTable",
 									"type": "DatasetReference"
 								}
 							}
@@ -146,7 +147,15 @@
 										"fileExtension": ".csv"
 									}
 								},
-								"enableStaging": false
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
 							},
 							"inputs": [
 								{
@@ -160,7 +169,7 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "BlobDynamicCsv",
+									"referenceName": "DS_DynamicCsvAsTableName",
 									"type": "DatasetReference"
 								}
 							]
@@ -214,7 +223,12 @@
 		"parameters": {
 			"PipelineName": {
 				"type": "string",
-				"defaultValue": "PL_IncrementalLoad_FilesFromSqlBulk"
+				"defaultValue": "PL_IncrementalLoad_FilesFromSql"
+			}
+		},
+		"variables": {
+			"prevWatermark": {
+				"type": "String"
 			}
 		},
 		"annotations": []
