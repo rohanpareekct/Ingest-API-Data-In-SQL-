@@ -5,6 +5,8 @@
 			{
 				"name": "Listoftables",
 				"type": "Lookup",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -30,6 +32,8 @@
 			{
 				"name": "ForEachTable",
 				"type": "ForEach",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Listoftables",
@@ -49,6 +53,8 @@
 						{
 							"name": "LastWatermark",
 							"type": "Lookup",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [],
 							"policy": {
 								"retry": 0,
@@ -76,6 +82,8 @@
 						{
 							"name": "NewWatermark",
 							"type": "Lookup",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [],
 							"policy": {
 								"retry": 0,
@@ -105,6 +113,8 @@
 						{
 							"name": "CopyTabletoBlob",
 							"type": "Copy",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [
 								{
 									"activity": "NewWatermark",
@@ -180,6 +190,8 @@
 						{
 							"name": "UpdateWatermark",
 							"type": "SqlServerStoredProcedure",
+							"state": "Inactive",
+							"onInactiveMarkAs": "Succeeded",
 							"dependsOn": [
 								{
 									"activity": "CopyTabletoBlob",
@@ -223,17 +235,6 @@
 				}
 			}
 		],
-		"parameters": {
-			"PipelineName": {
-				"type": "string",
-				"defaultValue": "PL_IncrementalLoad_FilesFromSql"
-			}
-		},
-		"variables": {
-			"prevWatermark": {
-				"type": "String"
-			}
-		},
 		"annotations": []
 	}
 }

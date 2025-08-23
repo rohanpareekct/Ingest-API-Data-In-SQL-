@@ -22,8 +22,178 @@
 					},
 					"dataset": {
 						"referenceName": "DS_DynamicTableName",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"tableName": "ListOfTables"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Listoftable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
 					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Listoftable').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "LastWatermark",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_FileNewWatermarkTable",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "NewwaterMark",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": "SELECT MAX(@{item().WatermarkColumn}) AS NewWaterMarkValue FROM @{item().TableName}",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_DynamicTableName",
+									"type": "DatasetReference",
+									"parameters": {
+										"tableName": "@{item().TableName}"
+									}
+								}
+							}
+						},
+						{
+							"name": "SQLtoBlob",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "LastWatermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "NewwaterMark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": "select \n    * \nfrom \n    @{item().TableName}\nwhere \n    @{item().watermarkcolumn}>'@{activity('LastWatermark').output.firstRow.WatermarkValue}' \nand @{item().watermarkcolumn}<='@{activity('NewwaterMark').output.firstRow.NewWaterMarkValue}'",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings",
+										"blockSizeInMB": 4
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_DynamicTableName",
+									"type": "DatasetReference",
+									"parameters": {
+										"tableName": "@item().TableName"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_DynamicCsvAsTableName",
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": "@item().TableName",
+										"FileName": "@concat('Increment load-',formatDateTime(utcNow(),'yyyy-MM-dd_HHmmss'))"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Fail1",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Pipeline Failed",
+					"errorCode": "400"
 				}
 			}
 		],
