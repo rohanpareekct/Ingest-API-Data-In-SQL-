@@ -64,7 +64,10 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"sqlReaderQuery": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+									"sqlReaderQuery": {
+										"value": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+										"type": "Expression"
+									},
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
@@ -89,7 +92,10 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"sqlReaderQuery": "SELECT MAX(@{item().WatermarkColumn}) AS NewWaterMarkValue FROM @{item().TableName}",
+									"sqlReaderQuery": {
+										"value": "SELECT MAX(@{item().WatermarkColumn}) AS NewWaterMarkValue FROM @{item().TableName}",
+										"type": "Expression"
+									},
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
@@ -130,7 +136,10 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"sqlReaderQuery": "select \n    * \nfrom \n    @{item().TableName}\nwhere \n    @{item().watermarkcolumn}>'@{activity('LastWatermark').output.firstRow.WatermarkValue}' \nand @{item().watermarkcolumn}<='@{activity('NewwaterMark').output.firstRow.NewWaterMarkValue}'",
+									"sqlReaderQuery": {
+										"value": "select \n    * \nfrom \n    @{item().TableName}\nwhere \n    @{item().watermarkcolumn}>'@{activity('LastWatermark').output.firstRow.WatermarkValue}' \nand @{item().watermarkcolumn}<='@{activity('NewwaterMark').output.firstRow.NewWaterMarkValue}'",
+										"type": "Expression"
+									},
 									"queryTimeout": "02:00:00",
 									"partitionOption": "None"
 								},
@@ -194,6 +203,30 @@
 				"typeProperties": {
 					"message": "Pipeline Failed",
 					"errorCode": "400"
+				}
+			},
+			{
+				"name": "Web1",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Fail1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": "https://prod-22.centralindia.logic.azure.com:443/workflows/c5aa99f8d97944068c12ca1bbdd6c544/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=qDN2D_drB5FEo2nQcPYf3zalWM37lSa6Wie1movuSAU"
 				}
 			}
 		],
