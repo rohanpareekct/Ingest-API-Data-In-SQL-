@@ -65,7 +65,7 @@
 								"source": {
 									"type": "AzureSqlSource",
 									"sqlReaderQuery": {
-										"value": "select * \nfrom newWatermarktable\nwhere TableName='@{item().TableName}'",
+										"value": "select * \nfrom watermarktable\nwhere TableName='@{item().TableName}'",
 										"type": "Expression"
 									},
 									"queryTimeout": "02:00:00",
@@ -184,6 +184,46 @@
 									}
 								}
 							]
+						},
+						{
+							"name": "Stored procedure1",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "SQLtoBlob",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[update_watermarkvalue]",
+								"storedProcedureParameters": {
+									"TableName": {
+										"value": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"LastModifiedtime": {
+										"value": "@activity('NewwaterMark').output.firstRow.NewWaterMarkValue",
+										"type": "Datetime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_SQLDB",
+								"type": "LinkedServiceReference"
+							}
 						}
 					]
 				}
@@ -212,7 +252,7 @@
 					{
 						"activity": "Fail1",
 						"dependencyConditions": [
-							"Succeeded"
+							"Failed"
 						]
 					}
 				],
@@ -227,7 +267,10 @@
 				"typeProperties": {
 					"method": "POST",
 					"url": "https://prod-22.centralindia.logic.azure.com:443/workflows/c5aa99f8d97944068c12ca1bbdd6c544/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=qDN2D_drB5FEo2nQcPYf3zalWM37lSa6Wie1movuSAU",
-					"body": "{test}"
+					"body": {
+						"message": "@{activity('Fail1').output.message}",
+						"errorCode": "@{activity('Fail1').output.errorCode}"
+					}
 				}
 			}
 		],
